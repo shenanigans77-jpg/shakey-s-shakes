@@ -1321,6 +1321,7 @@
     },
     {
       "files": [
+        "js/base/globals.js",
         "js/base/class-list-polyfill.js",
         "js/base/search-params.js",
         "js/base/mozilla-utils.js",
@@ -1465,6 +1466,12 @@
         "js/products/vpn/article.js"
       ],
       "name": "mozilla-vpn-article"
+    },
+    {
+      "files": [
+        "js/libs/html5shiv.js"
+      ],
+      "name": "html5-shiv"
     }
   ]
 }
