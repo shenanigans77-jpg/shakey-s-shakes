@@ -1201,6 +1201,7 @@ CSP_IMG_SRC = CSP_DEFAULT_SRC + [
     'creativecommons.org',
     'cdn-3.convertexperiments.com',
     'logs.convertexperiments.com',
+    'images.ctfassets.net',
 ]
 CSP_SCRIPT_SRC = CSP_DEFAULT_SRC + [
     # TODO fix things so that we don't need this
