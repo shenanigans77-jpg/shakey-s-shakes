@@ -209,6 +209,7 @@ def _only_child(node, nodeType):
                 # it's not the only child
                 only = False
                 break
+        # if it's the second matching node type it's not the only child
         elif child_node['nodeType'] == nodeType:
             found += 1
             if found > 1:
@@ -216,6 +217,7 @@ def _only_child(node, nodeType):
                 break
 
     return only
+
 
 class StrongRenderer(BaseInlineRenderer):
     @property
@@ -262,6 +264,7 @@ class LinkRenderer(BaseBlockRenderer):
             urlunparse(url), ref, data_cta, rel, self._render_content(node)
         )
 
+
 def _render_list(tag, content):
     return f"<{tag} class='mzp-u-list-styled'>{content}</{tag}>"
 
@@ -276,14 +279,25 @@ class OlRenderer(BaseBlockRenderer):
         return _render_list('ol', self._render_content(node))
 
 
+class LiRenderer(BaseBlockRenderer):
+    def render(self, node):
+        if _only_child(node, 'text'):
+            # The outter text node gets rendered as a paragraph... don't do that if there's only one p in the li
+            return f"<li>{self._render_content(node['content'][0])}</li>"
+        else:
+            return f"<li>{self._render_content(node)}</li>"
+
+
 class PRenderer(BaseBlockRenderer):
     def render(self, node):
         # contains only one node which is a link
         if _only_child(node, 'hyperlink'):
+            # add cta-link class
+            # TODO, class shoudl be added to <a>?
             return f'<p class="mzp-c-cta-link">{self._render_content(node)}</p>'
         # contains only an empty text node
         elif len(node['content']) == 1 and node['content'][0]['nodeType'] == 'text' and node['content'][0]['value'] == '':
-            # don't print
+            # just say no to empty p tags
             return ''
         else:
             return f"<p>{self._render_content(node)}</p>"
@@ -318,8 +332,9 @@ class ContentfulPage(ContentfulBase):
         'hyperlink': LinkRenderer,
         'bold': StrongRenderer,
         'italic': EmphasisRenderer,
-        'Unordered-list': UlRenderer,
+        'unordered-list': UlRenderer,
         'ordered-list': OlRenderer,
+        'list-item': LiRenderer,
         'paragraph': PRenderer,
         'embedded-entry-inline': InlineEntryRenderer,
     })
