@@ -13,17 +13,11 @@
 
 {% block body_id %}mozilla-vpn-landing{% endblock %}
 
+{% block body_class %}{% if switch('vpn-variable-pricing-wave-1') %}wave-1-variable-pricing{% else %}wave-1-fixed-pricing{% endif %}{% endblock %}
+
 {% set _utm_source = 'www.mozilla.org-vpn-product-page' %}
 {% set _utm_campaign = 'vpn-product-page' %}
 {% set _params = '?utm_source=' ~ _utm_source ~ '&utm_medium=referral&utm_campaign=' ~ _utm_campaign %}
-
-{% block experiments %}
-  {% if switch('vpn-landing-page-download-first-experiment') %}
-    {{ js_bundle('vpn-landing-page-download-first-experiment') }}
-  {% elif switch('vpn-landing-page-sub-position-experiment') %}
-    {{ js_bundle('vpn-landing-page-sub-position-experiment') }}
-  {% endif %}
-{% endblock %}
 
 {% block page_css %}
   {{ css_bundle('mozilla-vpn-landing') }}
