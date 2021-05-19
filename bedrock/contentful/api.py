@@ -97,6 +97,7 @@ def _get_image_url(image, width):
         w=width,
     )
 
+
 def _get_card_image_url(image, width, aspect):
     return 'https:' + image.url(
         w=width,
@@ -217,6 +218,7 @@ def _only_child(node, nodeType):
                 break
 
     return only
+
 
 
 class StrongRenderer(BaseInlineRenderer):
@@ -385,6 +387,7 @@ class ContentfulPage(ContentfulBase):
             'title': fields.get('preview_title', ''),
             'blurb': fields.get('preview_blurb', ''),
             'slug': slug,
+            'theme': 'firefox' if 'firefox' in folder else 'mozilla',
             'utm_source': 'www.mozilla.org-' + in_firefox + slug, #eg www.mozilla.org-firefox-accounts or www.mozilla.org-firefox-sync
             'utm_campaign': in_firefox + slug, #eg firefox-sync
         }
@@ -412,6 +415,7 @@ class ContentfulPage(ContentfulBase):
 
         page_data = self.get_page_data(page_id)
         page_type = page_data['page_type']
+        page_css = []
         fields = page_data['fields']
         content = None
         entries = []
@@ -420,10 +424,12 @@ class ContentfulPage(ContentfulBase):
             for key, value in fields.items():
                 if key == 'component_hero':
                     entries.append(self.get_hero_data(value.id))
+                    page_css.append('c-hero')
                 elif key == 'body':
                     entries.append(self.get_text_data(value))
                 elif key == 'layout_callout':
                     entries.append(self.get_callout_data(value.id))
+                    page_css.append('c-call-out')
         elif page_type == 'pageVersatile':
             content = fields.get('content')
         elif page_type == 'pageHome':
@@ -435,33 +441,48 @@ class ContentfulPage(ContentfulBase):
                 content_type = item.sys.get('content_type').id
                 if content_type == 'componentHero':
                     entries.append(self.get_hero_data(item.id))
+                    page_css.append('c-hero')
                 elif content_type == 'componentSectionHeading':
                     entries.append(self.get_section_data(item.id))
+                    page_css.append('c-section-heading')
                 elif content_type == 'componentSplitBlock':
                     entries.append(self.get_split_data(item.id))
+                    page_css.append('c-split')
                 elif content_type == 'layoutCallout':
                     entries.append(self.get_callout_data(item.id))
+                    page_css.append('c-call-out')
                 elif content_type == 'layout2Cards':
                     entries.append(self.get_card_layout_data(item.id))
+                    page_css.append('t-card-layout')
                 elif content_type == 'layout3Cards':
                     entries.append(self.get_card_layout_data(item.id))
+                    page_css.append('t-card-layout')
                 elif content_type == 'layout4Cards':
                     entries.append(self.get_card_layout_data(item.id))
+                    page_css.append('t-card-layout')
                 elif content_type == 'layout5Cards':
                     entries.append(self.get_card_layout_data(item.id))
+                    page_css.append('t-card-layout')
                 elif content_type == 'layoutPictoBlocks':
                     entries.append(self.get_picto_layout_data(item.id))
+                    page_css.append('c-picto')
+                    page_css.append('t-multi-column')
                 elif content_type == 'textOneColumn':
                     entries.append(self.get_text_column_data(1, item.id))
+                    page_css.append('t-multi-column')
                 elif content_type == 'textTwoColumns':
                     entries.append(self.get_text_column_data(2, item.id))
+                    page_css.append('t-multi-column')
                 elif content_type == 'textThreeColumns':
                     entries.append(self.get_text_column_data(3, item.id))
+                    page_css.append('t-multi-column')
                 elif content_type == 'textFourColumns':
                     entries.append(self.get_text_column_data(4, item.id))
+                    page_css.append('t-multi-column')
 
         return {
             'page_type': page_type,
+            'page_css': list(set(page_css)),
             'info': page_data['info'],
             'entries': entries,
         }

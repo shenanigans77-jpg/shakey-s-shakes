@@ -37,7 +37,7 @@
 {% endblock %}
 
 {% block page_css %}
-  {{ css_bundle('contentful_general') }}
+  {% include 'includes/contentful/css.html' %}
   {{ css_bundle('home-en') }}
 
   {% if switch('firefox-daylight-promo-banner') and not switch('fundraising-banner-eoy2020') %}

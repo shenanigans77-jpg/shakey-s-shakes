@@ -5,13 +5,13 @@
 {% extends "base-protocol-mozilla.html" %}
 
 {# analytics #}
-{% set _utm_source = 'mozilla.org-firefox-' + info.slug %}
-{% set _utm_campaign = 'features' %}
+{% set _utm_source = info.utm_source %}
+{% set _utm_campaign = info.utm_campaign %}
 {% set referrals = '?utm_source=www.mozilla.org&utm_medium=referral&utm_campaign=' + _utm_campaign %}
 
 {% set show_send_to_device = LANG in settings.SEND_TO_DEVICE_LOCALES %}
-{% set android_url = firefox_adjust_url('android', 'mobile-page') %}
-{% set ios_url = firefox_adjust_url('ios', 'mobile-page') %}
+{% set android_url = firefox_adjust_url('android', _utm_campaign) %}
+{% set ios_url = firefox_adjust_url('ios', _utm_campaign) %}
 
 {# meta data #}
 {% block page_title %}{{ info.title }}{% endblock %}
@@ -23,8 +23,7 @@
 {% block page_og_desc %}{{ info.blurb }}{% endblock %}
 
 {% block page_css %}
-  {{ css_bundle('contentful_general') }}
-  {# TODO: {{ static('media/prototocol/css/components/call-out') }} #}
+  {% include 'includes/contentful/css.html' %}
 {% endblock %}
 
 {% block body_class %}wmo-contentful{% endblock %}

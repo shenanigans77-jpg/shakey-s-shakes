@@ -153,8 +153,11 @@ class ContentfulPreviewView(L10nTemplateView):
 
     def render_to_response(self, context, **response_kwargs):
         page_type = context['page_type']
+        theme = context['info']['theme']
         if page_type == "pageHome":
             template = 'mozorg/contentful-homepage.html'
+        elif theme == "firefox":
+            template = 'firefox/contentful-all.html'
         else:
             template = 'mozorg/contentful-all.html'
 
