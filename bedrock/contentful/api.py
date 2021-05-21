@@ -416,6 +416,7 @@ class ContentfulPage(ContentfulBase):
         page_data = self.get_page_data(page_id)
         page_type = page_data['page_type']
         page_css = []
+        page_js = []
         fields = page_data['fields']
         content = None
         entries = []
@@ -454,15 +455,19 @@ class ContentfulPage(ContentfulBase):
                 elif content_type == 'layout2Cards':
                     entries.append(self.get_card_layout_data(item.id))
                     page_css.append('t-card-layout')
+                    page_js.append('c-card')
                 elif content_type == 'layout3Cards':
                     entries.append(self.get_card_layout_data(item.id))
                     page_css.append('t-card-layout')
+                    page_js.append('c-card')
                 elif content_type == 'layout4Cards':
                     entries.append(self.get_card_layout_data(item.id))
                     page_css.append('t-card-layout')
+                    page_js.append('c-card')
                 elif content_type == 'layout5Cards':
                     entries.append(self.get_card_layout_data(item.id))
                     page_css.append('t-card-layout')
+                    page_js.append('c-card')
                 elif content_type == 'layoutPictoBlocks':
                     entries.append(self.get_picto_layout_data(item.id))
                     page_css.append('c-picto')
@@ -483,6 +488,7 @@ class ContentfulPage(ContentfulBase):
         return {
             'page_type': page_type,
             'page_css': list(set(page_css)),
+            'page_js': list(set(page_js)),
             'info': page_data['info'],
             'entries': entries,
         }
@@ -590,11 +596,14 @@ class ContentfulPage(ContentfulBase):
             return ' '.join(media_classes)
 
         def get_mobile_class():
-            mobile_classes = [
-                'mzp-l-split-center-on-sm-md' if 'Center content' in fields.get('mobile_display') else '',
-                'mzp-l-split-hide-media-on-sm-md' if 'Hide image' in fields.get('mobile_display') else '',
-            ]
-            return ' '.join(mobile_classes)
+            if fields.get('mobile_display'):
+                mobile_classes = [
+                    'mzp-l-split-center-on-sm-md' if 'Center content' in fields.get('mobile_display') else '',
+                    'mzp-l-split-hide-media-on-sm-md' if 'Hide image' in fields.get('mobile_display') else '',
+                ]
+                return ' '.join(mobile_classes)
+            else:
+                return ''
 
         split_image_url = _get_image_url(fields['image'], 800)
 
@@ -649,6 +658,7 @@ class ContentfulPage(ContentfulBase):
             image_url = ''
 
         if 'you_tube' in fields:
+            # TODO: add youtube JS to page_js
             youtube_id = _get_youtube_id(fields.get('you_tube'))
         else:
             youtube_id = ''

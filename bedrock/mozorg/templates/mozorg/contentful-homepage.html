@@ -91,128 +91,7 @@
   {% endcall %}
 
 
-  {% for entry in entries -%}
-
-    {% if entry.component == 'hero' %}
-
-    {% if entries.index(entry) == 0: %}
-      {% set heading_level = 1 %}
-    {% else %}
-      {% set heading_level = 2 %}
-    {% endif %}
-
-      {% call hero(
-        title=entry.title,
-        tagline=entry.tagline,
-        desc=entry.body|safe,
-        class=entry.theme_class + ' ' + entry.product_class + ' ' + entry.image_class,
-        include_cta=entry.include_cta,
-        heading_level=heading_level,
-        image_url=entry.image,
-        include_highres_image=False,
-      ) %}
-
-        {{ entry.cta }}
-
-      {% endcall %}
-
-    {% elif entry.component == 'callout' %}
-
-      {% call call_out_compact(
-        title=entry.title,
-        desc=entry.body|safe,
-        class=entry.theme_class + ' ' + entry.product_class,
-      ) %}
-
-        {{ entry.cta }}
-
-      {% endcall %}
-
-    {% elif entry.component == 'text' %}
-
-      <div class="mzp-l-content {{ entry.width_class }}">
-        <article>
-          {{ entry.body|safe }}
-        </article>
-      </div>
-
-    {% elif entry.component == 'textColumns' %}
-
-      <div class="mzp-l-content mzp-l-columns {{ entry.layout_class }}">
-        {% for body in entry.content -%}
-          <div>
-            {{ body|safe }}
-          </div>
-        {% endfor %}
-      </div>
-
-    {% elif entry.component == 'cardLayout' %}
-      <div class="mzp-l-content">
-        <div class="{{ entry.layout_class }}">
-
-          {% for card_data in entry.cards -%}
-            {% if card_data.component == 'large_card' %}
-              {% set size_class = 'mzp-c-card-large' %}
-            {% else %}
-              {% set size_class = 'mzp-c-card-medium' %}
-            {% endif %}
-
-            {{ card(
-              class=size_class,
-              tag_label=card_data.tag,
-              title=card_data.heading,
-              desc=card_data.body|safe,
-              ga_title='ga_title',
-              highres_image_url=card_data.highres_image_url,
-              image_url=card_data.image_url,
-              aspect_ratio=card_data.aspect_ratio,
-              link_url=card_data.link,
-              youtube_id=card_data.youtube,
-            ) }}
-
-          {% endfor %}
-
-        </div>
-      </div>
-    {% elif entry.component == 'sectionHeading' %}
-      <h2 class="mzp-c-section-heading">{{ entry.heading }}</h2>
-    {% elif entry.component == 'pictoLayout' %}
-
-      <ul class="mzp-l-content {{ entry.layout_class }}">
-      {% for picto_data in entry.pictos -%}
-
-        {{ picto(
-          image_url=picto_data.image_url,
-          image_width=entry.image_width,
-          heading=picto_data.heading,
-          heading_level=entry.heading_level,
-          body=picto_data.body,
-          base_el='li'
-        ) }}
-
-      {% endfor %}
-      </ul>
-
-    {% elif entry.component == 'split' %}
-
-      {% call split(
-        block_class=entry.block_class,
-        body_class=entry.body_class,
-        theme_class=entry.theme_class,
-        media_class=entry.media_class,
-        mobile_class=entry.mobile_class,
-        image_url=entry.image,
-        include_highres_image=False,
-      ) %}
-
-        {{ entry.body|safe }}
-
-      {% endcall %}
-
-    {% endif %}
-
-
-  {% endfor %}
+  {% include 'includes/contentful/all.html' %}
 
 
   <aside class="mzp-c-newsletter">
@@ -255,12 +134,14 @@
 
 {% block js %}
   {{ js_bundle('home') }}
+  {% include 'includes/contentful/js.html' %}
 
   {% if switch('firefox-daylight-promo-banner') and not switch('fundraising-banner-eoy2020') %}
     {{ js_bundle('daylight-promo-banner') }}
   {% elif switch('fundraising-banner-eoy2020') %}
     {{ js_bundle('fundraising-banner') }}
   {% endif %}
+
 {% endblock %}
 
 {% block structured_data %}

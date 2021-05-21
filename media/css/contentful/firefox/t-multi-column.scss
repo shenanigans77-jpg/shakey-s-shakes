@@ -9,3 +9,5 @@ $brand-theme: 'firefox';
 
 @import '../../../protocol/css/includes/lib';
 @import '../../../protocol/css/templates/multi-column';
+
+@import '../patch';

@@ -9,3 +9,5 @@ $brand-theme: 'mozilla';
 
 @import '../../../protocol/css/includes/lib';
 @import '../../../protocol/css/components/split';
+
+@import '../patch';

@@ -964,6 +964,7 @@
     },
     {
       "files": [
+        "css/base/mozilla-lazy-image.scss",
         "css/contentful/firefox/t-card-layout.scss"
       ],
       "name": "firefox-t-card-layout"
@@ -1237,10 +1238,8 @@
       "files": [
         "protocol/js/protocol-modal.js",
         "protocol/js/protocol-newsletter.js",
-        "js/base/mozilla-lazy-load.js",
         "js/newsletter/form-protocol.js",
-        "js/mozorg/home/youtube.js",
-        "js/mozorg/home/home.js"
+        "js/mozorg/home/youtube.js"
       ],
       "name": "home"
     },
@@ -1701,6 +1700,13 @@
         "js/products/vpn/invite.js"
       ],
       "name": "mozilla-vpn-invite"
+    },
+    {
+      "files": [
+        "js/base/mozilla-lazy-load.js",
+        "js/contentful/lazyload-init.js"
+      ],
+      "name": "c-card"
     }
   ]
 }
