@@ -513,7 +513,7 @@ class ContentfulPage(ContentfulBase):
         data = {
             'component': 'hero',
             'theme_class': _get_theme_class(fields.get('theme')),
-            'product_class': _get_product_class(fields.get('product_icon')),
+            'product_class': _get_product_class(fields.get('product_icon')) if fields.get('product_icon') else '',
             'title': fields.get('heading'),
             'tagline': fields.get('tagline'),
             'body': hero_body,
@@ -634,7 +634,7 @@ class ContentfulPage(ContentfulBase):
         data = {
             'component': 'callout',
             'theme_class': _get_theme_class(fields.get('theme')),
-            'product_class': _get_product_class(content_fields.get('product_icon')),
+            'product_class': _get_product_class(fields.get('product_icon')) if fields.get('product_icon') else '',
             'title': content_fields.get('heading'),
             'body': content_body,
             'cta': _make_cta_button(content_fields.get('cta')),
