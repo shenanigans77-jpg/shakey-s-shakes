@@ -1,16 +1,17 @@
+from functools import partialmethod
+
 from django.conf import settings
 from urllib.parse import urlparse, urlunparse, urlencode, parse_qs
 
 import contentful as api
 from crum import get_current_request
+from django.utils.functional import cached_property
 from rich_text_renderer import RichTextRenderer
 from rich_text_renderer.base_node_renderer import BaseNodeRenderer
 from rich_text_renderer.block_renderers import BaseBlockRenderer
 from rich_text_renderer.text_renderers import BaseInlineRenderer
-#from unidecode import unidecode
-
-from lib.l10n_utils import render_to_string
-
+from bedrock.contentful.models import ContentfulEntry
+from lib.l10n_utils import render_to_string, get_locale
 
 # Bedrock to Contentful locale map
 LOCALE_MAP = {
@@ -67,7 +68,7 @@ COLUMN_CLASS = {
 }
 
 
-def get_client():
+def get_client(raw_mode=False):
     client = None
     if settings.CONTENTFUL_SPACE_ID:
         client = api.Client(
@@ -75,6 +76,8 @@ def get_client():
             settings.CONTENTFUL_SPACE_KEY,
             environment='V0',
             api_url=settings.CONTENTFUL_SPACE_API,
+            raw_mode=raw_mode,
+            content_type_cache=False,
         )
 
     return client
@@ -146,7 +149,7 @@ def _make_logo(entry):
     product = entry.fields()['product']
 
     data = {
-        'logo_size': 'md', # TODO
+        'logo_size': 'md',  # TODO
         'product_name': product,
         'product_icon': PRODUCT_THEMES.get(product, ""),
     }
@@ -158,7 +161,7 @@ def _make_wordmark(entry):
     product = entry.fields()['product']
 
     data = {
-        'logo_size': 'md', # TODO
+        'logo_size': 'md',  # TODO
         'product_name': product,
         'product_icon': PRODUCT_THEMES.get(product, ""),
     }
@@ -170,7 +173,7 @@ def _make_cta_button(entry):
     fields = entry.fields()
 
     button_class = [
-        'mzp-t-product', # TODO, only add on Firefox themed pages
+        'mzp-t-product',  # TODO, only add on Firefox themed pages
         'mzp-t-secondary' if fields.get('theme') == 'Secondary' else '',
         f'mzp-t-{WIDTHS.get(fields.get("size"), "")}' if fields.get('size') else '',
     ]
@@ -179,9 +182,9 @@ def _make_cta_button(entry):
         'action': fields.get('action'),
         'label': fields.get('label'),
         'button_class': ' '.join(button_class),
-        #TODO
-        'location': '', #eg primary, secondary
-        'cta_text': fields.get('label'), # TODO needs to use English in all locales
+        # TODO
+        'location': '',  # eg primary, secondary
+        'cta_text': fields.get('label'),  # TODO needs to use English in all locales
     }
     return render_to_string('includes/contentful/cta.html', data, get_current_request())
 
@@ -194,7 +197,7 @@ def _make_plain_text(node):
         plain += child_node['value']
 
     # TODO
-    #return unidecode(plain)
+    # return unidecode(plain)
     return plain
 
 
@@ -218,7 +221,6 @@ def _only_child(node, nodeType):
                 break
 
     return only
-
 
 
 class StrongRenderer(BaseInlineRenderer):
@@ -321,15 +323,9 @@ class InlineEntryRenderer(BaseNodeRenderer):
 
 
 class ContentfulBase:
-    client = None
-
-    def __init__(self):
-        self.client = get_client()
-
-
-class ContentfulPage(ContentfulBase):
     # TODO: List: stop list items from being wrapped in paragraph tags
     # TODO: Error/ Warn / Transform links to allizom
+    client = None
     _renderer = RichTextRenderer({
         'hyperlink': LinkRenderer,
         'bold': StrongRenderer,
@@ -340,56 +336,127 @@ class ContentfulPage(ContentfulBase):
         'paragraph': PRenderer,
         'embedded-entry-inline': InlineEntryRenderer,
     })
+    SPLIT_LAYOUT_CLASS = {
+        'Even': '',
+        'Narrow': 'mzp-l-split-body-narrow',
+        'Wide': 'mzp-l-split-body-wide',
+    }
 
-    locale = 'en-US'
+    SPLIT_MEDIA_WIDTH_CLASS = {
+        'Fill available width': '',
+        'Fill available height': 'mzp-l-split-media-constrain-height',
+        'Overflow container': 'mzp-l-split-media-overflow',
+    }
+
+    SPLIT_V_ALIGN_CLASS = {
+        'Top': 'mzp-l-split-v-start',
+        'Center': 'mzp-l-split-v-center',
+        'Bottom': 'mzp-l-split-v-end',
+    }
+
+    SPLIT_H_ALIGN_CLASS = {
+        'Left': 'mzp-l-split-h-start',
+        'Center': 'mzp-l-split-h-center',
+        'Right': 'mzp-l-split-h-end',
+    }
+
+    SPLIT_POP_CLASS = {
+        'None': '',
+        'Both': 'mzp-l-split-pop',
+        'Top': 'mzp-l-split-pop-top',
+        'Bottom': 'mzp-l-split-pop-bottom',
+    }
+    CONTENT_TYPE_MAP = {
+        'componentHero': {
+            'proc': 'get_hero_data',
+            'css': 'c-hero',
+        },
+        'componentSectionHeading': {
+            'proc': 'get_section_data',
+            'css': 'c-section-heading',
+        },
+        'componentSplitBlock': {
+            'proc': 'get_split_data',
+            'css': 'c-split',
+        },
+        'layoutCallout': {
+            'proc': 'get_callout_data',
+            'css': 'c-call-out',
+        },
+        'layout2Cards': {
+            'proc': 'get_card_layout_data',
+            'css': 't-card-layout',
+            'js': 'c-card'
+        },
+        'layout3Cards': {
+            'proc': 'get_card_layout_data',
+            'css': 't-card-layout',
+            'js': 'c-card'
+        },
+        'layout4Cards': {
+            'proc': 'get_card_layout_data',
+            'css': 't-card-layout',
+            'js': 'c-card'
+        },
+        'layout5Cards': {
+            'proc': 'get_card_layout_data',
+            'css': 't-card-layout',
+            'js': 'c-card'
+        },
+        'layoutPictoBlocks': {
+            'proc': 'get_picto_layout_data',
+            'css': ('c-picto', 't-multi-column'),
+        },
+        'textOneColumn': {
+            'proc': 'get_text_column_data_1',
+            'css': 't-multi-column',
+        },
+        'textTwoColumns': {
+            'proc': 'get_text_column_data_2',
+            'css': 't-multi-column',
+        },
+        'textThreeColumns': {
+            'proc': 'get_text_column_data_3',
+            'css': 't-multi-column',
+        },
+        'textFourColumns': {
+            'proc': 'get_text_column_data_4',
+            'css': 't-multi-column',
+        },
+    }
+
+    def __init__(self, request, page_id):
+        self.request = request
+        self.page_id = page_id
+        self.locale = get_locale(request)
+
+    @property
+    def page(self):
+        """Subclasses must implement this method.
+
+        It should return a Contentful Page object.
+        """
+        raise NotImplementedError()
 
     def render_rich_text(self, node):
         return self._renderer.render(node)
 
-    # def get_all_page_data(self):
-    #     pages = self.client.entries({'content_type': 'pageVersatile'})
-    #     return [self.get_page_data(p.id) for p in pages]
-
-    def get_page_data(self, page_id):
-        page = self.client.entry(page_id, {'include': 5, 'locale': self.locale})
-        fields = page.fields()
-        data = {
-            'page_type': page.content_type.id,
-            'info': self.get_info_data(page_id, self.locale),
-            'fields': fields,
-        }
-        return data
-
-    # page entry
-    def get_entry_data(self, page_id):
-        entry_data = self.client.entry(page_id, {'locale': self.locale})
-        # print(entry_data.__dict__)
-        return entry_data
-
-    def get_page_type(self, page_id):
-        page_obj = self.client.entry(page_id, {'locale': self.locale})
-        page_type = page_obj.sys.get('content_type').id
-        return page_type
-
-    # any entry
-    def get_entry_by_id(self, entry_id):
-        return self.client.entry(entry_id, {'locale': self.locale})
-
-    def get_info_data(self, entry_id, request_locale):
+    def get_info_data(self, entry_obj):
         # TODO, need to enable connectors
-        page = self.client.entry(entry_id, {'include': 5, 'locale': request_locale})
-        fields = page.fields()
+        fields = entry_obj.fields()
         folder = fields.get('folder', '')
         in_firefox = 'firefox-' if 'firefox' in folder else ''
         slug = fields.get('slug', 'home')
+        campaign = f'{in_firefox}{slug}'
 
         data = {
             'title': fields.get('preview_title', ''),
             'blurb': fields.get('preview_blurb', ''),
             'slug': slug,
             'theme': 'firefox' if 'firefox' in folder else 'mozilla',
-            'utm_source': 'www.mozilla.org-' + in_firefox + slug, #eg www.mozilla.org-firefox-accounts or www.mozilla.org-firefox-sync
-            'utm_campaign': in_firefox + slug, #eg firefox-sync
+            # eg www.mozilla.org-firefox-accounts or www.mozilla.org-firefox-sync
+            'utm_source': f'www.mozilla.org-{campaign}',
+            'utm_campaign': campaign,  # eg firefox-sync
         }
 
         if 'preview_image' in fields:
@@ -399,37 +466,33 @@ class ContentfulPage(ContentfulBase):
 
         return data
 
-    def get_content(self, entry_id, request_locale):
-        self.locale = contentful_locale(request_locale)
+    def get_content(self):
         # check if it is a page or a connector
-        entry_obj = self.client.entry(entry_id)
-        entry_type = entry_obj.content_type.id
+        entry_type = self.page.content_type.id
         if entry_type.startswith('page'):
-            page_id = entry_id
+            entry_obj = self.page
         elif entry_type == 'connectHomepage':
-            entry_fields = entry_obj.fields()
-            connected_entry = entry_fields.get('entry')
-            page_id = connected_entry.id
+            entry_obj = self.page.fields()['entry']
         else:
             raise ValueError(f'{entry_type} is not a recognized page type')
 
-        page_data = self.get_page_data(page_id)
-        page_type = page_data['page_type']
-        page_css = []
-        page_js = []
-        fields = page_data['fields']
+        self.request.page_info = self.get_info_data(entry_obj)
+        page_type = entry_obj.content_type.id
+        page_css = set()
+        page_js = set()
+        fields = entry_obj.fields()
         content = None
         entries = []
         if page_type == 'pageGeneral':
-             # look through all entries and find content ones
+            # look through all entries and find content ones
             for key, value in fields.items():
                 if key == 'component_hero':
-                    entries.append(self.get_hero_data(value.id))
+                    entries.append(self.get_hero_data(value))
                     page_css.append('c-hero')
                 elif key == 'body':
                     entries.append(self.get_text_data(value))
                 elif key == 'layout_callout':
-                    entries.append(self.get_callout_data(value.id))
+                    entries.append(self.get_callout_data(value))
                     page_css.append('c-call-out')
         elif page_type == 'pageVersatile':
             content = fields.get('content')
@@ -440,56 +503,30 @@ class ContentfulPage(ContentfulBase):
             # get components from content
             for item in content:
                 content_type = item.sys.get('content_type').id
-                if content_type == 'componentHero':
-                    entries.append(self.get_hero_data(item.id))
-                    page_css.append('c-hero')
-                elif content_type == 'componentSectionHeading':
-                    entries.append(self.get_section_data(item.id))
-                    page_css.append('c-section-heading')
-                elif content_type == 'componentSplitBlock':
-                    entries.append(self.get_split_data(item.id))
-                    page_css.append('c-split')
-                elif content_type == 'layoutCallout':
-                    entries.append(self.get_callout_data(item.id))
-                    page_css.append('c-call-out')
-                elif content_type == 'layout2Cards':
-                    entries.append(self.get_card_layout_data(item.id))
-                    page_css.append('t-card-layout')
-                    page_js.append('c-card')
-                elif content_type == 'layout3Cards':
-                    entries.append(self.get_card_layout_data(item.id))
-                    page_css.append('t-card-layout')
-                    page_js.append('c-card')
-                elif content_type == 'layout4Cards':
-                    entries.append(self.get_card_layout_data(item.id))
-                    page_css.append('t-card-layout')
-                    page_js.append('c-card')
-                elif content_type == 'layout5Cards':
-                    entries.append(self.get_card_layout_data(item.id))
-                    page_css.append('t-card-layout')
-                    page_js.append('c-card')
-                elif content_type == 'layoutPictoBlocks':
-                    entries.append(self.get_picto_layout_data(item.id))
-                    page_css.append('c-picto')
-                    page_css.append('t-multi-column')
-                elif content_type == 'textOneColumn':
-                    entries.append(self.get_text_column_data(1, item.id))
-                    page_css.append('t-multi-column')
-                elif content_type == 'textTwoColumns':
-                    entries.append(self.get_text_column_data(2, item.id))
-                    page_css.append('t-multi-column')
-                elif content_type == 'textThreeColumns':
-                    entries.append(self.get_text_column_data(3, item.id))
-                    page_css.append('t-multi-column')
-                elif content_type == 'textFourColumns':
-                    entries.append(self.get_text_column_data(4, item.id))
-                    page_css.append('t-multi-column')
+                ctype_info = self.CONTENT_TYPE_MAP.get(content_type)
+                if ctype_info:
+                    processor = getattr(self, ctype_info['proc'])
+                    entries.append(processor(item))
+                    css = ctype_info.get('css')
+                    if css:
+                        if isinstance(css, str):
+                            css = (css,)
+
+                        page_css.update(css)
+
+                    js = ctype_info.get('js')
+                    if js:
+                        if isinstance(js, str):
+                            js = (js,)
+
+                        page_js.update(js)
+
 
         return {
             'page_type': page_type,
-            'page_css': list(set(page_css)),
-            'page_js': list(set(page_js)),
-            'info': page_data['info'],
+            'page_css': list(page_css),
+            'page_js': list(page_js),
+            'info': self.request.page_info,
             'entries': entries,
         }
 
@@ -502,8 +539,7 @@ class ContentfulPage(ContentfulBase):
 
         return data
 
-    def get_hero_data(self, hero_id):
-        entry_obj = self.get_entry_by_id(hero_id)
+    def get_hero_data(self, entry_obj):
         fields = entry_obj.fields()
 
         hero_image_url = _get_image_url(fields['image'], 800)
@@ -525,8 +561,7 @@ class ContentfulPage(ContentfulBase):
 
         return data
 
-    def get_section_data(self, heading_id):
-        entry_obj = self.get_entry_by_id(heading_id)
+    def get_section_data(self, entry_obj):
         fields = entry_obj.fields()
 
         data = {
@@ -536,74 +571,42 @@ class ContentfulPage(ContentfulBase):
 
         return data
 
-    def get_split_data(self, split_id):
-
-        SPLIT_LAYOUT_CLASS = {
-            'Even': '',
-            'Narrow': 'mzp-l-split-body-narrow',
-            'Wide': 'mzp-l-split-body-wide',
-        }
-
-        SPLIT_MEDIA_WIDTH_CLASS = {
-            'Fill available width': '',
-            'Fill available height': 'mzp-l-split-media-constrain-height',
-            'Overflow container': 'mzp-l-split-media-overflow',
-        }
-
-        SPLIT_V_ALIGN_CLASS = {
-            'Top': 'mzp-l-split-v-start',
-            'Center': 'mzp-l-split-v-center',
-            'Bottom': 'mzp-l-split-v-end',
-        }
-
-        SPLIT_H_ALIGN_CLASS = {
-            'Left': 'mzp-l-split-h-start',
-            'Center': 'mzp-l-split-h-center',
-            'Right': 'mzp-l-split-h-end',
-        }
-
-        SPLIT_POP_CLASS = {
-            'None': '',
-            'Both': 'mzp-l-split-pop',
-            'Top': 'mzp-l-split-pop-top',
-            'Bottom': 'mzp-l-split-pop-bottom',
-        }
-
-        entry_obj = self.get_entry_by_id(split_id)
+    def get_split_data(self, entry_obj):
         fields = entry_obj.fields()
 
         def get_split_class():
             block_classes = [
                 'mzp-l-split-reversed' if fields.get('image_side') == 'Left' else '',
-                SPLIT_LAYOUT_CLASS.get(fields.get('body_width'), ''),
-                SPLIT_POP_CLASS.get(fields.get('image_pop'), ''),
+                self.SPLIT_LAYOUT_CLASS.get(fields.get('body_width'), ''),
+                self.SPLIT_POP_CLASS.get(fields.get('image_pop'), ''),
             ]
             return ' '.join(block_classes)
 
         def get_body_class():
             body_classes = [
-                SPLIT_V_ALIGN_CLASS.get(fields.get('body_vertical_alignment'), ''),
-                SPLIT_H_ALIGN_CLASS.get(fields.get('body_horizontal_alignment'), ''),
+                self.SPLIT_V_ALIGN_CLASS.get(fields.get('body_vertical_alignment'), ''),
+                self.SPLIT_H_ALIGN_CLASS.get(fields.get('body_horizontal_alignment'), ''),
             ]
             return ' '.join(body_classes)
 
         def get_media_class():
             media_classes = [
-                SPLIT_MEDIA_WIDTH_CLASS.get(fields.get('image_width'), ''),
-                SPLIT_V_ALIGN_CLASS.get(fields.get('image_vertical_alignment'), ''),
-                SPLIT_H_ALIGN_CLASS.get(fields.get('image_horizontal_alignment'), ''),
+                self.SPLIT_MEDIA_WIDTH_CLASS.get(fields.get('image_width'), ''),
+                self.SPLIT_V_ALIGN_CLASS.get(fields.get('image_vertical_alignment'), ''),
+                self.SPLIT_H_ALIGN_CLASS.get(fields.get('image_horizontal_alignment'), ''),
             ]
             return ' '.join(media_classes)
 
         def get_mobile_class():
-            if fields.get('mobile_display'):
-                mobile_classes = [
-                    'mzp-l-split-center-on-sm-md' if 'Center content' in fields.get('mobile_display') else '',
-                    'mzp-l-split-hide-media-on-sm-md' if 'Hide image' in fields.get('mobile_display') else '',
-                ]
-                return ' '.join(mobile_classes)
-            else:
+            mobile_display = fields.get('mobile_display')
+            if not mobile_display:
                 return ''
+
+            mobile_classes = [
+                'mzp-l-split-center-on-sm-md' if 'Center content' in mobile_display else '',
+                'mzp-l-split-hide-media-on-sm-md' if 'Hide image' in mobile_display else '',
+            ]
+            return ' '.join(mobile_classes)
 
         split_image_url = _get_image_url(fields['image'], 800)
 
@@ -618,12 +621,9 @@ class ContentfulPage(ContentfulBase):
             'mobile_class': get_mobile_class(),
         }
 
-        #print(self.render(fields.get('body')))
-
         return data
 
-    def get_callout_data(self, callout_id):
-        entry_obj = self.get_entry_by_id(callout_id)
+    def get_callout_data(self, entry_obj):
         fields = entry_obj.fields()
 
         content_id = fields.get('component_callout').id
@@ -642,20 +642,18 @@ class ContentfulPage(ContentfulBase):
 
         return data
 
-    def get_card_data(self, card_id, aspect_ratio):
+    def get_card_data(self, entry_obj, aspect_ratio):
         # need a fallback aspect ratio
         aspect_ratio = aspect_ratio or '16:9'
-        entry_obj = self.get_entry_by_id(card_id)
         fields = entry_obj.fields()
         card_body = self.render_rich_text(fields.get('body')) if fields.get('body') else ''
+        image_url = highres_image_url = ''
 
         if 'image' in fields:
             card_image = fields.get('image')
             # TODO smaller image files when layout allows it
             highres_image_url = _get_card_image_url(card_image, 800, aspect_ratio)
             image_url = _get_card_image_url(card_image, 800, aspect_ratio)
-        else:
-            image_url = ''
 
         if 'you_tube' in fields:
             # TODO: add youtube JS to page_js
@@ -677,29 +675,26 @@ class ContentfulPage(ContentfulBase):
 
         return data
 
-    def get_large_card_data(self, card_layout_id, card_id):
-        entry_obj = self.get_entry_by_id(card_layout_id)
+    def get_large_card_data(self, entry_obj, card_obj):
         fields = entry_obj.fields()
+
+        # get card data
+        card_data = self.get_card_data(card_obj, "16:9")
 
         # large card data
         large_card_image = fields.get('image')
-        highres_image_url = _get_card_image_url(large_card_image, 1860, "16:9")
-        image_url = _get_card_image_url(large_card_image, 1860, "16:9")
+        if large_card_image:
+            highres_image_url = _get_card_image_url(large_card_image, 1860, "16:9")
+            image_url = _get_card_image_url(large_card_image, 1860, "16:9")
 
-        # get card data
-        card_data = self.get_card_data(card_id, "16:9")
+            # over-write with large values
+            card_data['component'] = 'large_card'
+            card_data['highres_image_url'] = highres_image_url
+            card_data['image_url'] = image_url
 
-        # over-write with large values
-        card_data['component'] = 'large_card'
-        card_data['highres_image_url'] = highres_image_url
-        card_data['image_url'] = image_url
+        return card_data
 
-        data = card_data
-
-        return data
-
-    def get_card_layout_data(self, layout_id):
-        entry_obj = self.get_entry_by_id(layout_id)
+    def get_card_layout_data(self, entry_obj):
         fields = entry_obj.fields()
         aspect_ratio = fields.get('aspect_ratio')
         layout = entry_obj.sys.get('content_type').id
@@ -713,49 +708,43 @@ class ContentfulPage(ContentfulBase):
 
         follows_large_card = False
         if layout == 'layout5Cards':
-            card_layout_id = fields.get('large_card').id
-            card_id = fields.get('large_card').fields().get('card').id
-            large_card_data = self.get_large_card_data(card_layout_id, card_id)
+            card_layout_obj = fields.get('large_card')
+            card_obj = fields.get('large_card').fields().get('card')
+            large_card_data = self.get_large_card_data(card_layout_obj, card_obj)
 
             data.get('cards').append(large_card_data)
             follows_large_card = True
 
         cards = fields.get('content')
         for card in cards:
-            if follows_large_card == True:
+            if follows_large_card:
                 this_aspect = '1:1'
                 follows_large_card = False
             else:
                 this_aspect = aspect_ratio
-            card_id = card.id
-            card_data = self.get_card_data(card_id, this_aspect)
+            card_data = self.get_card_data(card, this_aspect)
             data.get('cards').append(card_data)
 
         return data
 
-
-    def get_picto_data(self, picto_id, image_width):
-        entry = self.get_entry_by_id(picto_id)
-        fields = entry.fields()
+    def get_picto_data(self, picto, image_width):
+        fields = picto.fields()
         body = self.render_rich_text(fields.get('body')) if fields.get('body') else ''
-
 
         if 'icon' in fields:
             picto_image = fields.get('icon')
             image_url = _get_image_url(picto_image, image_width)
         else:
-            image_url = '' # TODO: this should cause an error, the macro requires an image
+            image_url = ''  # TODO: this should cause an error, the macro requires an image
 
-        data = {
-                'component': 'picto',
-                'heading': fields.get('heading'),
-                'body': body,
-                'image_url': image_url,
-            }
+        return {
+            'component': 'picto',
+            'heading': fields.get('heading'),
+            'body': body,
+            'image_url': image_url,
+        }
 
-        return data
-
-    def get_picto_layout_data(self, layout_id):
+    def get_picto_layout_data(self, entry):
         PICTO_ICON_SIZE = {
             'Small': 32,
             'Medium': 48,
@@ -763,9 +752,8 @@ class ContentfulPage(ContentfulBase):
             'Extra Large': 96,
             'Extra Extra Large': 192,
         }
-        entry = self.get_entry_by_id(layout_id)
         fields = entry.fields()
-        layout = entry.sys.get('content_type').id
+        # layout = entry.sys.get('content_type').id
 
         def get_layout_class():
             layout_classes = [
@@ -780,7 +768,6 @@ class ContentfulPage(ContentfulBase):
 
         image_width = PICTO_ICON_SIZE.get(fields.get('icon_size')) if fields.get('icon_size') else PICTO_ICON_SIZE.get("Large")
 
-
         data = {
             'component': 'pictoLayout',
             'layout_class': get_layout_class(),
@@ -791,14 +778,12 @@ class ContentfulPage(ContentfulBase):
 
         pictos = fields.get('content')
         for picto in pictos:
-            picto_id = picto.id
-            picto_data = self.get_picto_data(picto_id, image_width)
+            picto_data = self.get_picto_data(picto, image_width)
             data.get('pictos').append(picto_data)
 
         return data
 
-    def get_text_column_data(self, cols, text_id):
-        entry_obj = self.get_entry_by_id(text_id)
+    def get_text_column_data(self, cols, entry_obj):
         fields = entry_obj.fields()
 
         def get_content_class():
@@ -826,7 +811,26 @@ class ContentfulPage(ContentfulBase):
 
         return data
 
-contentful_preview_page = ContentfulPage()
+    get_text_column_data_1 = partialmethod(get_text_column_data, 1)
+    get_text_column_data_2 = partialmethod(get_text_column_data, 2)
+    get_text_column_data_3 = partialmethod(get_text_column_data, 3)
+    get_text_column_data_4 = partialmethod(get_text_column_data, 4)
+
+
+class ContentfulPreviewPage(ContentfulBase):
+    client = get_client()
+
+    @cached_property
+    def page(self):
+        return self.client.entry(self.page_id, {
+            'include': 10,
+        })
+
+
+class ContentfulPage(ContentfulBase):
+    @cached_property
+    def page(self):
+        return ContentfulEntry.objects.get_page_by_id(self.page_id)
 
 
 # TODO make optional fields optional

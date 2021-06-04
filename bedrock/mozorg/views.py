@@ -14,7 +14,7 @@ from lib import l10n_utils
 from lib.l10n_utils import L10nTemplateView
 
 from bedrock.contentcards.models import get_page_content_cards
-from bedrock.contentful.api import contentful_preview_page
+from bedrock.contentful.api import ContentfulPage, ContentfulPreviewPage
 from bedrock.mozorg.credits import CreditsFile
 from bedrock.pocketfeed.models import PocketArticle
 
@@ -126,11 +126,11 @@ def home_view(request):
     if locale.startswith('en-'):
         # TODO, should we fall back to the ROW homepage if something goes wrong ?
         template_name = 'mozorg/contentful-homepage.html'
-        ctx.update(contentful_preview_page.get_content('58YIvwDmzSDjtvpSqstDcL', 'en-US'))
+        ctx.update(ContentfulPage(request, '58YIvwDmzSDjtvpSqstDcL').get_content())
     elif locale == 'de':
         # TODO, should we fall back to the ROW homepage if something goes wrong ?
         template_name = 'mozorg/contentful-homepage.html'
-        ctx.update(contentful_preview_page.get_content('4k3CxqZGjxXOjR1I0dhyto', 'de'))
+        ctx.update(ContentfulPage(request, '4k3CxqZGjxXOjR1I0dhyto').get_content())
     elif locale == 'fr':
         template_name = 'mozorg/home/home-fr.html'
         ctx['page_content_cards'] = get_page_content_cards('home-fr', 'fr')
@@ -145,10 +145,8 @@ class ContentfulPreviewView(L10nTemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         content_id = ctx['content_id']
-        locale = l10n_utils.get_locale(self.request)
-        page_info = contentful_preview_page.get_info_data(content_id, locale)
-        self.request.page_info = page_info
-        ctx.update(contentful_preview_page.get_content(content_id, locale))
+        page = ContentfulPreviewPage(self.request, content_id)
+        ctx.update(page.get_content())
         return ctx
 
     def render_to_response(self, context, **response_kwargs):
