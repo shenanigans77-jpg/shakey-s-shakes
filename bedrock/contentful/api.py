@@ -13,6 +13,7 @@ from rich_text_renderer.text_renderers import BaseInlineRenderer
 from bedrock.contentful.models import ContentfulEntry
 from lib.l10n_utils import render_to_string, get_locale
 
+
 # Bedrock to Contentful locale map
 LOCALE_MAP = {
     'de': 'de-DE',
@@ -520,7 +521,6 @@ class ContentfulBase:
                             js = (js,)
 
                         page_js.update(js)
-
 
         return {
             'page_type': page_type,
