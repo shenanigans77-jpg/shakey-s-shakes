@@ -4,7 +4,7 @@ from django.conf import settings
 from urllib.parse import urlparse, urlunparse, urlencode, parse_qs
 
 import contentful as api
-from crum import get_current_request
+from crum import get_current_request, set_current_request
 from django.utils.functional import cached_property
 from rich_text_renderer import RichTextRenderer
 from rich_text_renderer.base_node_renderer import BaseNodeRenderer
@@ -310,8 +310,9 @@ class PRenderer(BaseBlockRenderer):
 
 class InlineEntryRenderer(BaseNodeRenderer):
     def render(self, node):
-        entry = node['data']['target']
-        content_type = entry.sys.get('content_type').id
+        entry_id = node['data']['target']['sys']['id']
+        entry = ContentfulPreviewPage.client.entry(entry_id)
+        content_type = entry.sys['content_type'].id
 
         if content_type == 'componentLogo':
             return _make_logo(entry)
@@ -427,6 +428,7 @@ class ContentfulBase:
     }
 
     def __init__(self, request, page_id):
+        set_current_request(request)
         self.request = request
         self.page_id = page_id
         self.locale = get_locale(request)
@@ -466,6 +468,9 @@ class ContentfulBase:
             data['image'] = 'https:' + preview_image_url
 
         return data
+
+    def get_entry_by_id(self, entry_id):
+        return self.client.entry(entry_id, {'locale': self.locale})
 
     def get_content(self):
         # check if it is a page or a connector

@@ -478,7 +478,6 @@ MIDDLEWARE = [
     # must come before LocaleURLMiddleware
     'bedrock.redirects.middleware.RedirectsMiddleware',
     'bedrock.base.middleware.LocaleURLMiddleware',
-    'crum.CurrentRequestUserMiddleware',
     'bedrock.mozorg.middleware.ClacksOverheadMiddleware',
     'bedrock.mozorg.middleware.HostnameMiddleware',
     'django.middleware.common.CommonMiddleware',
