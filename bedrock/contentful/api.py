@@ -549,7 +549,7 @@ class ContentfulBase:
         data = {
             'component': 'hero',
             'theme_class': _get_theme_class(fields.get('theme')),
-            'product_class': _get_product_class(fields.get('product_icon')) if fields.get('product_icon') else '',
+            'product_class': _get_product_class(fields.get('product_icon')) if fields.get('product_icon') and fields.get('product_icon') != 'None' else '',
             'title': fields.get('heading'),
             'tagline': fields.get('tagline'),
             'body': hero_body,
@@ -726,9 +726,10 @@ class ContentfulBase:
 
         return data
 
-    def get_picto_data(self, picto, image_width):
-        fields = picto.fields()
-        body = self.render_rich_text(fields.get('body')) if fields.get('body') else ''
+    def get_picto_data(self, picto_obj, image_width):
+
+        fields = picto_obj.fields()
+        body = self.render_rich_text(fields.get('body')) if fields.get('body') else False
 
         if 'icon' in fields:
             picto_image = fields.get('icon')
@@ -776,8 +777,8 @@ class ContentfulBase:
         }
 
         pictos = fields.get('content')
-        for picto in pictos:
-            picto_data = self.get_picto_data(picto, image_width)
+        for picto_obj in pictos:
+            picto_data = self.get_picto_data(picto_obj, image_width)
             data.get('pictos').append(picto_data)
 
         return data
