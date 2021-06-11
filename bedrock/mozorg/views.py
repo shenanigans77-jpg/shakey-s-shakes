@@ -10,6 +10,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_safe
 from django.views.generic import TemplateView
 
+from bedrock.base.waffle import switch
 from lib import l10n_utils
 from lib.l10n_utils import L10nTemplateView
 
@@ -124,13 +125,30 @@ def home_view(request):
     }
 
     if locale.startswith('en-'):
-        # TODO, should we fall back to the ROW homepage if something goes wrong ?
-        template_name = 'mozorg/contentful-homepage.html'
-        ctx.update(ContentfulPage(request, '58YIvwDmzSDjtvpSqstDcL').get_content())
+        if switch('contentful-homepage-en'):
+            try:
+                template_name = 'mozorg/contentful-homepage.html'
+                # TODO: use a better system to get the pages than the ID
+                ctx.update(ContentfulPage(request, '58YIvwDmzSDjtvpSqstDcL').get_content())
+            except Exception:
+                # if anything goes wrong, use the old page
+                template_name = 'mozorg/home/home-en.html'
+                ctx['page_content_cards'] = get_page_content_cards('home-en', 'en-US')
+        else:
+            template_name = 'mozorg/home/home-en.html'
+            ctx['page_content_cards'] = get_page_content_cards('home-en', 'en-US')
     elif locale == 'de':
-        # TODO, should we fall back to the ROW homepage if something goes wrong ?
-        template_name = 'mozorg/contentful-homepage.html'
-        ctx.update(ContentfulPage(request, '4k3CxqZGjxXOjR1I0dhyto').get_content())
+        if switch('contentful-homepage-de'):
+            try:
+                template_name = 'mozorg/contentful-homepage.html'
+                ctx.update(ContentfulPage(request, '4k3CxqZGjxXOjR1I0dhyto').get_content())
+            except Exception:
+                # if anything goes wrong, use the old page
+                template_name = 'mozorg/home/home-de.html'
+                ctx['page_content_cards'] = get_page_content_cards('home-de', 'de')
+        else:
+            template_name = 'mozorg/home/home-de.html'
+            ctx['page_content_cards'] = get_page_content_cards('home-de', 'de')
     elif locale == 'fr':
         template_name = 'mozorg/home/home-fr.html'
         ctx['page_content_cards'] = get_page_content_cards('home-fr', 'fr')
