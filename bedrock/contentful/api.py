@@ -336,7 +336,7 @@ class ContentfulBase:
         'ordered-list': OlRenderer,
         'list-item': LiRenderer,
         'paragraph': PRenderer,
-        #'embedded-entry-inline': InlineEntryRenderer,
+        'embedded-entry-inline': InlineEntryRenderer,
     })
     SPLIT_LAYOUT_CLASS = {
         'Even': '',
