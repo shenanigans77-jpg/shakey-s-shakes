@@ -631,17 +631,13 @@ class ContentfulBase:
     def get_callout_data(self, entry_obj):
         fields = entry_obj.fields()
 
-        content_obj = fields.get('component_callout')
-        content_fields = content_obj.fields()
-        content_body = self.render_rich_text(content_fields.get('body')) if content_fields.get('body') else ''
-
         data = {
             'component': 'callout',
             'theme_class': _get_theme_class(fields.get('theme')),
-            'product_class': _get_product_class(content_fields.get('product_icon')) if content_fields.get('product_icon') else '',
-            'title': content_fields.get('heading'),
-            'body': content_body,
-            'cta': _make_cta_button(content_fields.get('cta')),
+            'product_class': _get_product_class(fields.get('product_icon')) if fields.get('product_icon') else '',
+            'title': fields.get('heading'),
+            'body': self.render_rich_text(fields.get('body')) if fields.get('body') else '',
+            'cta': _make_cta_button(fields.get('cta')),
         }
 
         return data
