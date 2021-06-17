@@ -513,7 +513,6 @@ class ContentfulBase:
         if page_type == 'pageGeneral':
             # look through all entries and find content ones
             for key, value in fields.items():
-                print(key)
                 if key == 'component_hero':
                     proc(value)
                 elif key == 'body':
