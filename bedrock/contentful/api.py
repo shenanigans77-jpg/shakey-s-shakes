@@ -381,7 +381,7 @@ class ContentfulBase:
             'proc': 'get_split_data',
             'css': 'c-split',
         },
-        'layoutCallout': {
+        'componentCallout': {
             'proc': 'get_callout_data',
             'css': 'c-call-out',
         },
@@ -489,17 +489,37 @@ class ContentfulBase:
         fields = entry_obj.fields()
         content = None
         entries = []
+
+        def proc(item):
+            content_type = item.sys.get('content_type').id
+            ctype_info = self.CONTENT_TYPE_MAP.get(content_type)
+            if ctype_info:
+                processor = getattr(self, ctype_info['proc'])
+                entries.append(processor(item))
+                css = ctype_info.get('css')
+                if css:
+                    if isinstance(css, str):
+                        css = (css,)
+
+                    page_css.update(css)
+
+                js = ctype_info.get('js')
+                if js:
+                    if isinstance(js, str):
+                        js = (js,)
+
+                    page_js.update(js)
+
         if page_type == 'pageGeneral':
             # look through all entries and find content ones
             for key, value in fields.items():
+                print(key)
                 if key == 'component_hero':
-                    entries.append(self.get_hero_data(value))
-                    page_css.append('c-hero')
+                    proc(value)
                 elif key == 'body':
                     entries.append(self.get_text_data(value))
-                elif key == 'layout_callout':
-                    entries.append(self.get_callout_data(value))
-                    page_css.append('c-call-out')
+                elif key == 'component_callout':
+                    proc(value)
         elif page_type == 'pageVersatile':
             content = fields.get('content')
         elif page_type == 'pageHome':
@@ -508,24 +528,7 @@ class ContentfulBase:
         if content:
             # get components from content
             for item in content:
-                content_type = item.sys.get('content_type').id
-                ctype_info = self.CONTENT_TYPE_MAP.get(content_type)
-                if ctype_info:
-                    processor = getattr(self, ctype_info['proc'])
-                    entries.append(processor(item))
-                    css = ctype_info.get('css')
-                    if css:
-                        if isinstance(css, str):
-                            css = (css,)
-
-                        page_css.update(css)
-
-                    js = ctype_info.get('js')
-                    if js:
-                        if isinstance(js, str):
-                            js = (js,)
-
-                        page_js.update(js)
+                proc(item)
 
         return {
             'page_type': page_type,
