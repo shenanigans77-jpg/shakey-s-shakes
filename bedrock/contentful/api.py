@@ -146,7 +146,7 @@ def _get_column_class(columns):
 
 
 def _make_logo(entry):
-    product = entry.fields()['product']
+    product = entry.fields()['product_icon']
 
     data = {
         'logo_size': 'md',  # TODO
@@ -158,7 +158,7 @@ def _make_logo(entry):
 
 
 def _make_wordmark(entry):
-    product = entry.fields()['product']
+    product = entry.fields()['product_icon']
 
     data = {
         'logo_size': 'md',  # TODO
