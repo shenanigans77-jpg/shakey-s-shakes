@@ -3,8 +3,9 @@ from hashlib import sha256
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
+from django.test import RequestFactory
 
-from bedrock.contentful.api import get_client
+from bedrock.contentful.api import ContentfulPage
 from bedrock.contentful.models import ContentfulEntry
 
 
@@ -14,6 +15,8 @@ def data_hash(data):
 
 
 class Command(BaseCommand):
+    rf = RequestFactory()
+
     def add_arguments(self, parser):
         parser.add_argument('-q', '--quiet', action='store_true', dest='quiet', default=False,
                             help='If no error occurs, swallow all output.'),
@@ -32,24 +35,20 @@ class Command(BaseCommand):
         self.log(f'Done. Added: {added}. Updated: {updated}')
 
     def refresh(self):
-        client = get_client()
-        raw_client = get_client(True)
         updated_count = 0
         added_count = 0
         content_ids = []
         for ctype in settings.CONTENTFUL_CONTENT_TYPES:
-            for entry in client.entries({'content_type': ctype, 'include': 0}).items:
+            for entry in ContentfulPage.client.entries({'content_type': ctype, 'include': 0}).items:
                 content_ids.append((ctype, entry.sys['id']))
 
         for ctype, page_id in content_ids:
-            resp = raw_client.entries({'sys.id': page_id, 'include': 10})
-            resp.raise_for_status()
-            page = resp.json()
-            hash = data_hash(page)
-            if ctype == 'connectHomepage':
-                language = page['items'][0]['fields']['name']
-            else:
-                language = page['items'][0]['sys']['locale']
+            request = self.rf.get('/')
+            request.locale = 'en-US'
+            page = ContentfulPage(request, page_id)
+            page_data = page.get_content()
+            language = page_data['info']['lang']
+            hash = data_hash(page_data)
 
             try:
                 obj = ContentfulEntry.objects.get(contentful_id=page_id)
@@ -59,14 +58,14 @@ class Command(BaseCommand):
                     content_type=ctype,
                     language=language,
                     data_hash=hash,
-                    data=page,
+                    data=page_data,
                 )
                 added_count += 1
             else:
                 if self.force or hash != obj.data_hash:
                     obj.language = language
                     obj.data_hash = hash
-                    obj.data = page
+                    obj.data = page_data
                     obj.save()
                     updated_count += 1
 

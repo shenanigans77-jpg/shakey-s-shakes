@@ -2,7 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-from commonware.decorators import xframe_allow
 from django.conf import settings
 from django.shortcuts import render as django_render
 from django.utils.decorators import method_decorator
@@ -10,12 +9,14 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_safe
 from django.views.generic import TemplateView
 
-from bedrock.base.waffle import switch
+from commonware.decorators import xframe_allow
 from lib import l10n_utils
 from lib.l10n_utils import L10nTemplateView
 
+from bedrock.base.waffle import switch
 from bedrock.contentcards.models import get_page_content_cards
-from bedrock.contentful.api import ContentfulPage, ContentfulPreviewPage
+from bedrock.contentful.api import ContentfulPage
+from bedrock.contentful.models import ContentfulEntry
 from bedrock.mozorg.credits import CreditsFile
 from bedrock.pocketfeed.models import PocketArticle
 
@@ -129,7 +130,7 @@ def home_view(request):
             try:
                 template_name = 'mozorg/contentful-homepage.html'
                 # TODO: use a better system to get the pages than the ID
-                ctx.update(ContentfulPage(request, '58YIvwDmzSDjtvpSqstDcL').get_content())
+                ctx.update(ContentfulEntry.objects.get_page_by_id('58YIvwDmzSDjtvpSqstDcL'))
             except Exception:
                 # if anything goes wrong, use the old page
                 template_name = 'mozorg/home/home-en.html'
@@ -141,7 +142,7 @@ def home_view(request):
         if switch('contentful-homepage-de'):
             try:
                 template_name = 'mozorg/contentful-homepage.html'
-                ctx.update(ContentfulPage(request, '4k3CxqZGjxXOjR1I0dhyto').get_content())
+                ctx.update(ContentfulEntry.objects.get_page_by_id('4k3CxqZGjxXOjR1I0dhyto'))
             except Exception:
                 # if anything goes wrong, use the old page
                 template_name = 'mozorg/home/home-de.html'
@@ -163,7 +164,7 @@ class ContentfulPreviewView(L10nTemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         content_id = ctx['content_id']
-        page = ContentfulPreviewPage(self.request, content_id)
+        page = ContentfulPage(self.request, content_id)
         ctx.update(page.get_content())
         return ctx
 

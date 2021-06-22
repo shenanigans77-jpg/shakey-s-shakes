@@ -10,7 +10,6 @@ from rich_text_renderer import RichTextRenderer
 from rich_text_renderer.base_node_renderer import BaseNodeRenderer
 from rich_text_renderer.block_renderers import BaseBlockRenderer
 from rich_text_renderer.text_renderers import BaseInlineRenderer
-from bedrock.contentful.models import ContentfulEntry
 from lib.l10n_utils import render_to_string, get_locale
 
 
@@ -128,7 +127,7 @@ def _get_aspect_ratio_class(aspect_ratio):
 
 
 def _get_width_class(width):
-    return f'mzp-t-content-{WIDTHS.get(width, "")}'
+    return f'mzp-t-content-{WIDTHS.get(width, "")}' if width else ''
 
 
 def _get_theme_class(theme):
@@ -311,7 +310,7 @@ class PRenderer(BaseBlockRenderer):
 class InlineEntryRenderer(BaseNodeRenderer):
     def render(self, node):
         entry_id = node['data']['target']['sys']['id']
-        entry = ContentfulPreviewPage.client.entry(entry_id)
+        entry = ContentfulPage.client.entry(entry_id)
         content_type = entry.sys['content_type'].id
 
         if content_type == 'componentLogo':
@@ -324,10 +323,10 @@ class InlineEntryRenderer(BaseNodeRenderer):
             return content_type
 
 
-class ContentfulBase:
+class ContentfulPage:
     # TODO: List: stop list items from being wrapped in paragraph tags
     # TODO: Error/ Warn / Transform links to allizom
-    client = None
+    client = get_client()
     _renderer = RichTextRenderer({
         'hyperlink': LinkRenderer,
         'bold': StrongRenderer,
@@ -433,16 +432,14 @@ class ContentfulBase:
         self.page_id = page_id
         self.locale = get_locale(request)
 
-    @property
+    @cached_property
     def page(self):
-        """Subclasses must implement this method.
-
-        It should return a Contentful Page object.
-        """
-        raise NotImplementedError()
+        return self.client.entry(self.page_id, {
+            'include': 10,
+        })
 
     def render_rich_text(self, node):
-        return self._renderer.render(node)
+        return self._renderer.render(node) if node else ''
 
     def get_info_data(self, entry_obj):
         # TODO, need to enable connectors
@@ -451,11 +448,17 @@ class ContentfulBase:
         in_firefox = 'firefox-' if 'firefox' in folder else ''
         slug = fields.get('slug', 'home')
         campaign = f'{in_firefox}{slug}'
+        page_type = entry_obj.content_type.id
+        if page_type == 'pageHome':
+            lang = fields['name']
+        else:
+            lang = entry_obj.sys['locale']
 
         data = {
             'title': fields.get('preview_title', ''),
             'blurb': fields.get('preview_blurb', ''),
             'slug': slug,
+            'lang': lang,
             'theme': 'firefox' if 'firefox' in folder else 'mozilla',
             # eg www.mozilla.org-firefox-accounts or www.mozilla.org-firefox-sync
             'utm_source': f'www.mozilla.org-{campaign}',
@@ -759,12 +762,13 @@ class ContentfulBase:
         # layout = entry.sys.get('content_type').id
 
         def get_layout_class():
+            column_class = _get_column_class(str(fields.get('blocks_per_row')))
             layout_classes = [
-                _get_width_class(fields.get('width')) if fields.get('width') else '',
-                _get_column_class(str(fields.get('blocks_per_row')) if fields.get('blocks_per_row') else '3'),
+                _get_width_class(fields.get('width')),
+                column_class or '3',
                 'mzp-t-picto-side' if fields.get('icon_position') == 'Side' else '',
                 'mzp-t-picto-center' if fields.get('block_alignment') == 'Center' else '',
-                _get_theme_class(fields.get('theme')) if fields.get('theme') else '',
+                _get_theme_class(fields.get('theme')),
             ]
 
             return ' '.join(layout_classes)
@@ -791,9 +795,9 @@ class ContentfulBase:
 
         def get_content_class():
             content_classes = [
-                _get_width_class(fields.get('width')) if fields.get('width') else '',
+                _get_width_class(fields.get('width')),
                 _get_column_class(str(cols)),
-                _get_theme_class(fields.get('theme')) if fields.get('theme') else '',
+                _get_theme_class(fields.get('theme')),
                 'mzp-u-center' if fields.get('block_alignment') == 'Center' else '',
             ]
 
@@ -802,15 +806,15 @@ class ContentfulBase:
         data = {
             'component': 'textColumns',
             'layout_class': get_content_class(),
-            'content': [self.render_rich_text(fields.get('body_column_one')) if fields.get('body_column_one') else ''],
+            'content': [self.render_rich_text(fields.get('body_column_one'))],
         }
 
         if cols > 1:
-            data['content'].append(self.render_rich_text(fields.get('body_column_two')) if fields.get('body_column_two') else '')
+            data['content'].append(self.render_rich_text(fields.get('body_column_two')))
         if cols > 2:
-            data['content'].append(self.render_rich_text(fields.get('body_column_three')) if fields.get('body_column_three') else '')
+            data['content'].append(self.render_rich_text(fields.get('body_column_three')))
         if cols > 3:
-            data['content'].append(self.render_rich_text(fields.get('body_column_four')) if fields.get('body_column_four') else '')
+            data['content'].append(self.render_rich_text(fields.get('body_column_four')))
 
         return data
 
@@ -818,22 +822,6 @@ class ContentfulBase:
     get_text_column_data_2 = partialmethod(get_text_column_data, 2)
     get_text_column_data_3 = partialmethod(get_text_column_data, 3)
     get_text_column_data_4 = partialmethod(get_text_column_data, 4)
-
-
-class ContentfulPreviewPage(ContentfulBase):
-    client = get_client()
-
-    @cached_property
-    def page(self):
-        return self.client.entry(self.page_id, {
-            'include': 10,
-        })
-
-
-class ContentfulPage(ContentfulBase):
-    @cached_property
-    def page(self):
-        return ContentfulEntry.objects.get_page_by_id(self.page_id)
 
 
 # TODO make optional fields optional

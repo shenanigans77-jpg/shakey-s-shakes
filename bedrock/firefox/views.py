@@ -33,7 +33,7 @@ from product_details.version_compare import Version
 from bedrock.base.urlresolvers import reverse
 from bedrock.base.waffle import switch
 from bedrock.base.waffle_config import config, DictOf
-from bedrock.contentful.api import ContentfulPreviewPage
+from bedrock.contentful.api import ContentfulPage
 from bedrock.firefox.firefox_details import firefox_android, firefox_desktop, firefox_ios
 from bedrock.firefox.forms import SendToDeviceWidgetForm
 from bedrock.newsletter.forms import NewsletterFooterForm
@@ -952,7 +952,7 @@ class FirefoxContenful(L10nTemplateView):
         ctx = super().get_context_data(**kwargs)
         content_id = ctx['content_id']
         locale = l10n_utils.get_locale(self.request)
-        page = ContentfulPreviewPage(content_id, locale)
+        page = ContentfulPage(content_id, locale)
         content = page.get_content()
         self.request.page_info = content['info']
         ctx.update(content)
