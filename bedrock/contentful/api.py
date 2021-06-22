@@ -324,13 +324,14 @@ class InlineEntryRenderer(BaseNodeRenderer):
 
 
 class AssetBlockRenderer(BaseBlockRenderer):
-    IMAGE_HTML = '<img src="{src}" alt="{alt}" />'
+    IMAGE_HTML = '<img src="{src}" srcset="{src_highres} 1.5x" alt="{alt}" />'
 
     def render(self, node):
         asset_id = node['data']['target']['sys']['id']
         asset = ContentfulPage.client.asset(asset_id)
         return self.IMAGE_HTML.format(
-            src=_get_image_url(asset, 800),
+            src=_get_image_url(asset, 688),
+            src_highres=_get_image_url(asset, 1376),
             alt=asset.title,
         )
 
