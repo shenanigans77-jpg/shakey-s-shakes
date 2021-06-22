@@ -36,6 +36,7 @@ ALLOWED_ATTRS = [
     'href',
     'id',
     'src',
+    'srcset',
     'title',
 ]
 
