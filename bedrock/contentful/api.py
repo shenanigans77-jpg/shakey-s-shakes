@@ -8,7 +8,7 @@ from crum import get_current_request, set_current_request
 from django.utils.functional import cached_property
 from rich_text_renderer import RichTextRenderer
 from rich_text_renderer.base_node_renderer import BaseNodeRenderer
-from rich_text_renderer.block_renderers import BaseBlockRenderer, AssetBlockRenderer
+from rich_text_renderer.block_renderers import BaseBlockRenderer
 from rich_text_renderer.text_renderers import BaseInlineRenderer
 from lib.l10n_utils import render_to_string, get_locale
 
@@ -323,15 +323,16 @@ class InlineEntryRenderer(BaseNodeRenderer):
             return content_type
 
 
-class AssetBlockFetchingRenderer(AssetBlockRenderer):
+class AssetBlockRenderer(BaseBlockRenderer):
+    IMAGE_HTML = '<img src="{src}" alt="{alt}" />'
+
     def render(self, node):
-        try:
-            return super().render(node)
-        except Exception:
-            # probably just need to fetch the thing
-            asset_id = node['data']['target']['sys']['id']
-            asset = ContentfulPage.client.asset(asset_id)
-            return self._render_asset(asset)
+        asset_id = node['data']['target']['sys']['id']
+        asset = ContentfulPage.client.asset(asset_id)
+        return self.IMAGE_HTML.format(
+            src=_get_image_url(asset, 800),
+            alt=asset.title,
+        )
 
 
 class ContentfulPage:
@@ -347,7 +348,7 @@ class ContentfulPage:
         'list-item': LiRenderer,
         'paragraph': PRenderer,
         'embedded-entry-inline': InlineEntryRenderer,
-        'embedded-asset-block': AssetBlockFetchingRenderer,
+        'embedded-asset-block': AssetBlockRenderer,
     })
     SPLIT_LAYOUT_CLASS = {
         'Even': '',
