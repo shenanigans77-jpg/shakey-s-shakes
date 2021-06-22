@@ -21,6 +21,7 @@ ALLOWED_TAGS = [
     'h5',
     'h6',
     'i',
+    'img',
     'li',
     'ol',
     'p',
@@ -34,6 +35,7 @@ ALLOWED_ATTRS = [
     'class',
     'href',
     'id',
+    'src',
     'title',
 ]
 

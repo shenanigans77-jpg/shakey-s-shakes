@@ -326,12 +326,12 @@ class InlineEntryRenderer(BaseNodeRenderer):
 class AssetBlockFetchingRenderer(AssetBlockRenderer):
     def render(self, node):
         try:
-            super().render(node)
+            return super().render(node)
         except Exception:
             # probably just need to fetch the thing
-            entry_id = node['data']['target']['sys']['id']
-            entry = ContentfulPage.client.entry(entry_id)
-            super().render(entry)
+            asset_id = node['data']['target']['sys']['id']
+            asset = ContentfulPage.client.asset(asset_id)
+            return self._render_asset(asset)
 
 
 class ContentfulPage:
