@@ -26,6 +26,7 @@ ALLOWED_TAGS = [
     'ol',
     'p',
     'small',
+    'span',
     'strike',
     'strong',
     'ul',
@@ -37,6 +38,7 @@ ALLOWED_ATTRS = [
     'id',
     'src',
     'srcset',
+    'rel',
     'title',
 ]
 

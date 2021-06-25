@@ -146,24 +146,26 @@ def _get_column_class(columns):
 
 
 def _make_logo(entry):
-    product = entry.fields()['product_icon']
+    fields = entry.fields()
+    product = fields['product_icon']
 
     data = {
-        'logo_size': 'md',  # TODO
         'product_name': product,
-        'product_icon': PRODUCT_THEMES.get(product, ""),
+        'product_icon': PRODUCT_THEMES.get(product, ''),
+        'icon_size': WIDTHS.get(fields.get("icon_size"), '') if fields.get('icon_size') else 'md',
     }
 
     return render_to_string('includes/contentful/logo.html', data, get_current_request())
 
 
 def _make_wordmark(entry):
-    product = entry.fields()['product_icon']
+    fields = entry.fields()
+    product = fields['product_icon']
 
     data = {
-        'logo_size': 'md',  # TODO
         'product_name': product,
-        'product_icon': PRODUCT_THEMES.get(product, ""),
+        'product_icon': PRODUCT_THEMES.get(product, ''),
+        'icon_size': WIDTHS.get(fields.get("icon_size"), '') if fields.get('icon_size') else 'md',
     }
 
     return render_to_string('includes/contentful/wordmark.html', data, get_current_request())
