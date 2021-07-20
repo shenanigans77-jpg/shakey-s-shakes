@@ -4,5 +4,10 @@
 
 @import '../../protocol/css/includes/lib';
 @import '../../protocol/css/components/split';
+@import '../../protocol/css/components/picto';
+@import '../../protocol/css/templates/multi-column';
 
 
+.tagline {
+    @include text-body-xl;
+}

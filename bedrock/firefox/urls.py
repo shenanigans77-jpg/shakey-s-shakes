@@ -9,6 +9,7 @@ from bedrock.releasenotes import version_re
 
 from bedrock.firefox import views
 from bedrock.utils import views as utils_views
+from bedrock.utils.views import VariationTemplateView
 
 
 latest_re = r'^firefox(?:/(?P<version>%s))?/%s/$'
@@ -40,7 +41,13 @@ urlpatterns = (
     page('firefox/enterprise', 'firefox/enterprise/index.html', ftl_files=['firefox/enterprise']),
     page('firefox/facebookcontainer', 'firefox/facebookcontainer/index.html', ftl_files=['firefox/facebook_container']),
 
-    page('firefox/newbies', 'firefox/home/newbies.html', ftl_files=['firefox/newbies']),
+    # page('firefox/newbies', 'firefox/home/newbies.html', ftl_files=['firefox/newbies']),
+    url(r'^firefox/newbies/$',
+        VariationTemplateView.as_view(template_name='firefox/home/newbies.html',
+                                      template_name_variations=['a', 'b'],
+                                      variation_locales=['en-US'],
+                                      active_locales=['en-US']),
+        name='firefox.newbies'),
 
     page('firefox/features', 'firefox/features/index.html',
          ftl_files=['firefox/features/shared', 'firefox/features/index']),

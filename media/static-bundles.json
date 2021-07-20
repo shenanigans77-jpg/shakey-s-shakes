@@ -1458,6 +1458,13 @@
         "js/products/vpn/invite.js"
       ],
       "name": "mozilla-vpn-invite"
+    },
+    {
+      "files": [
+        "js/libs/mozilla-traffic-cop.js",
+        "js/firefox/home/newbies-experiment.js"
+      ],
+      "name": "newbies-experiment"
     }
   ]
 }

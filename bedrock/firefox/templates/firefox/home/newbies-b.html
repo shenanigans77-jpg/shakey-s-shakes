@@ -13,12 +13,6 @@
   {{ css_bundle('newbies') }}
 {% endblock %}
 
-{% block experiments %}
-{% if switch('newbies-experiment') %}
-  {{ js_bundle('newbies-experiment') }}
-{% endif %}
-{% endblock %}
-
 {% block content %}
   {% call split(
     image_url='img/firefox/browsers/quantum/browser.jpg',
@@ -26,12 +20,11 @@
     block_class='mzp-t-split-nospace',
     theme_class='mzp-l-split-center-on-sm-md',
   ) %}
-    <h1 class="title">Base</h1>
+    <h1 class="title">Variant B</h1>
     <p class="tagline">Look at my fancy tagline.</p>
     <p class="cta"><button class="mzp-c-button">Call to Action</button></p>
   {% endcall %}
 
-{% if switch('pictos') %}
 <section class="mzp-l-content mzp-t-content-lg">
   <ul class="mzp-l-columns mzp-t-columns-three">
     {% call picto(
@@ -59,5 +52,4 @@
     {% endcall %}
   </ul>
 </section>
-{% endif %}
 {% endblock %}

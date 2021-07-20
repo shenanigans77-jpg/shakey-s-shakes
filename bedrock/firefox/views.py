@@ -928,3 +928,4 @@ def firefox_features_translate(request):
 
     return l10n_utils.render(request, template_name, context,
                              ftl_files=['firefox/features/shared', 'firefox/features/translate'])
+
