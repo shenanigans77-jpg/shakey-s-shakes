@@ -25,8 +25,8 @@ $image-path: "/media/protocol/img";
 
         .mzp-c-split-body {
             display: flex;
-            justify-content: center;
             flex-direction: column;
+            justify-content: center;
             max-width: 580px;
             .mzp-c-logo {
                 align-self: center;
@@ -35,11 +35,11 @@ $image-path: "/media/protocol/img";
                 }
             }
             .mzp-u-title-xl {
-                padding-top: $spacing-md;
                 margin-bottom: $spacing-md;
+                padding-top: $spacing-md;
                 @media #{$mq-md} {
-                    padding-top: $spacing-lg;
                     margin-bottom: $spacing-xl;
+                    padding-top: $spacing-lg;
                 }
             }
             .mzp-u-title-3xs {
