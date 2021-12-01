@@ -3,6 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 @import "../utils/variables";
+@import "./mobile-nav";
 
 $image-path: '/media/img/externalpages/pocket';
 
@@ -46,6 +47,7 @@ $image-path: '/media/img/externalpages/pocket';
         margin-bottom: -2px;
         display: inline-block;
         margin-top: -4px;
+        pointer-events: none;
         vertical-align: middle;
     }
 
